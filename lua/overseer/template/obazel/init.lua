@@ -88,6 +88,7 @@ function provider.generator(opts, cb)
         if err2 ~= nil then
             vim.notify(err2, vim.log.levels.ERROR)
         else
+            local binary = vim.fn.fnamemodify(config.bazel_binary, ":t")
             for _, target in ipairs(targets) do
                 -- TODO toggleable in config to show short or long targets?
                 local short_target = remove_prefix(target, target_prefix)
@@ -95,7 +96,7 @@ function provider.generator(opts, cb)
                 ---@type overseer.TemplateDefinition
                 local template = vim.tbl_deep_extend(
                     "force",
-                    { name = ("bazel %s %s"):format(table.concat(query_config.args, " "), short_target) },
+                    { name = ("%s %s %s"):format(binary, table.concat(query_config.args, " "), short_target) },
                     query_config.template_file_definition ~= nil and query_config.template_file_definition or {}
                 )
 
