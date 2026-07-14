@@ -11,8 +11,7 @@
 ---Example configuration
 --->lua
 ---     ---@module 'obazel'
----     ---@type obazel.Config
----     vim.g.obazel = {
+---     require("obazel").setup({
 ---       -- (optional) The binary used to invoke bazel commands
 ---       bazel_binary = "bazel",
 ---       overseer = {
@@ -48,7 +47,15 @@
 ---           },
 ---         },
 ---       },
----     }
+---     })
+---
+---Because |obazel.setup()| passes the config directly as a Lua table, values
+---like `template_file_definition` or `template` may contain overseer
+---components with configuration options, e.g.
+---`{ "on_output_parse", errorformat = "..." }`. This wasn't possible with the
+---old `vim.g.obazel`-based configuration, since values assigned to `vim.g`
+---variables are round-tripped through Vimscript, which has no way to
+---represent that shape of table.
 ---
 ---@brief ]]
 
@@ -94,9 +101,6 @@
 ---@field args string[] args that will be passed to bazel before the targets
 ---@field template_file_definition? table (optional) overrides values in the base overseer.TemplateFileDefinition
 ---@see overseer.TemplateFileDefinition
-
----@type obazel.Config | fun():obazel.Config | nil
-vim.g.obazel = vim.g.obazel
 
 local config = {}
 
