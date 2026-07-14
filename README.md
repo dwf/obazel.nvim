@@ -16,9 +16,13 @@ An [overseer.nvim](https://github.com/stevearc/overseer.nvim) template provider 
 
 ## Configuration
 
-The template provider needs to be registered with overseer:
+obazel.nvim is configured by calling `require("obazel").setup({...})`, and
+the template provider needs to be registered with overseer:
 
 ```lua
+require("obazel").setup({
+    -- see "Example Configuration" below
+})
 require("overseer").setup({
     templates = {
         "builtin",
@@ -36,8 +40,12 @@ require("overseer").setup({
 }
 ```
 
+`obazel.setup()` must run before overseer collects templates (e.g. before
+`:OverseerRun` or `preload_task_cache()` is invoked), so call it as part of
+your plugin configuration.
+
 The template provider does not come with any default templates. They must be
-configured through the `vim.g.obazel` table.
+configured through `obazel.setup()`.
 
 > [!WARNING]
 > obazel.nvim runs `bazel query` asynchronously when populating the task list,
@@ -71,8 +79,7 @@ vim.api.nvim_create_autocmd("BufEnter", {
 
 ```lua
 ---@module 'obazel'
----@type obazel.Config
-vim.g.obazel = {
+require("obazel").setup({
   -- (optional) The binary used to invoke bazel commands
   -- bazel_binary = "bazel",
   overseer = {
@@ -113,5 +120,13 @@ vim.g.obazel = {
       },
     },
   },
-}
+})
 ```
+
+Because `obazel.setup()` passes the config directly as a Lua table, values
+like `template_file_definition` or `template` may contain overseer
+components with configuration options, e.g.
+`{ "on_output_parse", errorformat = "..." }`. This wasn't possible with the
+old `vim.g.obazel`-based configuration, since values assigned to `vim.g`
+variables are round-tripped through Vimscript, which has no way to represent
+that shape of table.

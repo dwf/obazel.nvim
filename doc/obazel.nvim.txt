@@ -14,10 +14,10 @@ If there are targets that should always be available regardless of the
 current open file, for example `bazel run //:gazelle`, they can be
 configured as static templates.
 
-See |obazel-nvim.config| for an example configuration.
-
-The template provider will need to be registered with overseer:
+Call |obazel.setup()| to configure obazel.nvim, then register the template
+provider with overseer:
 >lua
+     require("obazel").setup({ ... })
      require("overseer").setup({
          templates = {
              "builtin",
@@ -25,8 +25,9 @@ The template provider will need to be registered with overseer:
          },
      }
 
+See |obazel-nvim.config| for an example configuration.
+
 See:
-     |overseer.wrap_template|
      https://github.com/stevearc/overseer.nvim/blob/master/doc/guides.md
 
 ==============================================================================
@@ -35,6 +36,14 @@ Table of Contents                                              *obazel-contents*
 obazel.nvim ······················································ |obazel-nvim|
 obazel.nvim configuration ································· |obazel-nvim.config|
 Bazel utilities ············································ |obazel-nvim.bazel|
+
+obazel.setup({opts?})                                        *obazel-nvim.setup*
+    Configure obazel.nvim. Must be called before overseer.nvim collects
+    templates (e.g. via |:OverseerRun| or `preload_task_cache()`).
+
+    Parameters: ~
+        {opts?}  (obazel.Config)
+
 
 ==============================================================================
 obazel.nvim configuration                                   *obazel-nvim.config*
@@ -47,8 +56,7 @@ generators see |obazel.GeneratorConfig|. No templates are defined by default.
 Example configuration
 >lua
      ---@module 'obazel'
-     ---@type obazel.Config
-     vim.g.obazel = {
+     require("obazel").setup({
        -- (optional) The binary used to invoke bazel commands
        bazel_binary = "bazel",
        overseer = {
@@ -56,7 +64,7 @@ Example configuration
          templates = {
            {
              args = { "run", "//:gazelle" },
-             template = { name = "bazel run //:gazelle", priority = 50 },
+             template = { name = "bazel run //:gazelle" },
            },
          },
          -- task templates generated via bazel queries
@@ -66,7 +74,6 @@ Example configuration
              args = { "test" },
              template_file_definition = {
                tags = { "TEST" },
-               priority = 51,
              },
            },
            {
@@ -74,7 +81,6 @@ Example configuration
              args = { "run" },
              template_file_definition = {
                tags = { "RUN" },
-               priority = 52,
              },
            },
            {
@@ -82,12 +88,19 @@ Example configuration
              args = { "build" },
              template_file_definition = {
                tags = { "BUILD" },
-               priority = 100,
              },
            },
          },
        },
-     }
+     })
+
+Because |obazel.setup()| passes the config directly as a Lua table, values
+like `template_file_definition` or `template` may contain overseer
+components with configuration options, e.g.
+`{ "on_output_parse", errorformat = "..." }`. This wasn't possible with the
+old `vim.g.obazel`-based configuration, since values assigned to `vim.g`
+variables are round-tripped through Vimscript, which has no way to
+represent that shape of table.
 
 
 obazel.Config                                                    *obazel.Config*
@@ -108,11 +121,11 @@ obazel.TemplateConfig                                    *obazel.TemplateConfig*
     A static template definition for bazel targets that you always want to have
     available. For example `bazel run //:gazelle`.
 
-    Use the `template` argument to set the `name` and `priority` of the task:
+    Use the `template` argument to set the `name` of the task:
     >lua
          {
              args = { "run", "//:gazelle" },
-             template = { name = "bazel run //:gazelle", priority = 50 },
+             template = { name = "bazel run //:gazelle" },
          }
 
     Fields: ~
@@ -135,7 +148,6 @@ obazel.GeneratorConfig                                  *obazel.GeneratorConfig*
            args = { "test" },
            template_file_definition = {
              tags = { "TEST" },
-             priority = 51,
            },
          }
 
@@ -145,7 +157,7 @@ obazel.GeneratorConfig                                  *obazel.GeneratorConfig*
         {template_file_definition?}  (table)     (optional) overrides values in the base overseer.TemplateFileDefinition
 
     See: ~
-        |overseer.wrap_template|
+        |overseer.TemplateFileDefinition|
 
 
 ==============================================================================
@@ -158,6 +170,8 @@ Utilities for working with Bazel workspaces
                                       *obazel-nvim.bazel.resolve_workspace_file*
 bazel.resolve_workspace_file({directory})
     Resolves the WORKSPACE file path
+    Recognises MODULE.bazel, REPO.bazel (Bzlmod), WORKSPACE.bazel, and WORKSPACE
+    as workspace root markers, checked in that order of preference.
 
     Parameters: ~
         {directory}  (nil|string)  (default: vim.fn.getcwd())
@@ -178,7 +192,8 @@ bazel.resolve_workspace_dir({directory})
 
 
 bazel.resolve_buildfile({directory})       *obazel-nvim.bazel.resolve_buildfile*
-    Resolves the nearest BUILD.bazel file from the given directory
+    Resolves the nearest BUILD or BUILD.bazel file from the given directory
+    Prefers BUILD.bazel if both exist in the same directory
 
     Parameters: ~
         {directory}  (string)
