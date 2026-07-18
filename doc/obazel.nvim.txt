@@ -26,7 +26,6 @@ The template provider will need to be registered with overseer:
      }
 
 See:
-     |overseer.wrap_template|
      https://github.com/stevearc/overseer.nvim/blob/master/doc/guides.md
 
 ==============================================================================
@@ -141,7 +140,7 @@ obazel.GeneratorConfig                                  *obazel.GeneratorConfig*
         {template_file_definition?}  (table)     (optional) overrides values in the base overseer.TemplateFileDefinition
 
     See: ~
-        |overseer.wrap_template|
+        |overseer.TemplateFileDefinition|
 
 
 ==============================================================================
@@ -154,6 +153,8 @@ Utilities for working with Bazel workspaces
                                       *obazel-nvim.bazel.resolve_workspace_file*
 bazel.resolve_workspace_file({directory})
     Resolves the WORKSPACE file path
+    Recognises MODULE.bazel, REPO.bazel (Bzlmod), WORKSPACE.bazel, and WORKSPACE
+    as workspace root markers, checked in that order of preference.
 
     Parameters: ~
         {directory}  (nil|string)  (default: vim.fn.getcwd())
@@ -174,7 +175,8 @@ bazel.resolve_workspace_dir({directory})
 
 
 bazel.resolve_buildfile({directory})       *obazel-nvim.bazel.resolve_buildfile*
-    Resolves the nearest BUILD.bazel file from the given directory
+    Resolves the nearest BUILD or BUILD.bazel file from the given directory
+    Prefers BUILD.bazel if both exist in the same directory
 
     Parameters: ~
         {directory}  (string)
